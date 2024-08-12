@@ -1,0 +1,29 @@
+<p:fieldset legend="Header">
+
+    <p-inputMask id="date" [(ngModel)]="#{maskView.date}"
+                 mask="99/99/9999" />
+
+    <input type="text" id="float-input" [(ngModel)]="#{inputTextView.text}" />
+
+    <p:selectOneMenu id="option"
+                     [(ngModel)]="#{selectOneMenuView.selectedOption}">
+        <f:selectItem itemLabel="Select One" itemValue="" />
+        <f:selectItem itemLabel="Option1" itemValue="Option1" />
+        <f:selectItem itemLabel="Option2" itemValue="Option2" />
+        <f:selectItem itemLabel="Option3" itemValue="Option3" />
+
+    </p:selectOneMenu>
+
+
+    <p:selectOneRadio id="line" [(ngModel)]="#{radioView.line}"
+                      layout="lineDirection">
+        <f:selectItem itemLabel="Option1" itemValue="Option1" />
+        <f:selectItem itemLabel="Option2" itemValue="Option2" />
+        <f:selectItem itemLabel="Option3" itemValue="Option3" />
+    </p:selectOneRadio>
+
+    <p:commandButton [(ngModel)]="submit" styleClass="submit"
+                     action="#{buttonBasicView.sleep()}" />
+
+</p:fieldset>
+
