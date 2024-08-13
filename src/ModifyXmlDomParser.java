@@ -10,9 +10,11 @@ import java.io.InputStream;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
-import java.util.LinkedList;
+import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Properties;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -25,21 +27,75 @@ import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 
 import org.w3c.dom.Document;
-import org.w3c.dom.Element;
-import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
 
 public class ModifyXmlDomParser {
 	private static final String FILENAME = "C:\\Users\\Sasmita Laptop\\eclipse-workspac4\\XhtmlProject\\filename.txt";
-	static LinkedList<String> list = new LinkedList<>();
+
+	final static String filePath = "C:\\Users\\Sasmita Laptop\\eclipse-workspac4\\XhtmlProject\\src\\resources\\config.properties";
 
 	public static void main(String[] args) throws IOException {
-		mappingFile();
+		// read text file to HashMap
+		Map<String, String> mapFromFile = HashMapFromTextFile();
+
+		// iterate over HashMap entries
+		for (Map.Entry<String, String> entry : mapFromFile.entrySet()) {
+			System.out.println(entry.getKey() + " : " + entry.getValue() + "--------------------------");
+		}
+		mappingFile(mapFromFile);
 		replaceValue();
 		replaceNgModel();
 		mappingFileOutput();
+
+	}
+
+	public static Map<String, String> HashMapFromTextFile() {
+
+		Map<String, String> map = new HashMap<String, String>();
+		BufferedReader br = null;
+
+		try {
+
+			// create file object
+			File file = new File(filePath);
+
+			// create BufferedReader object from the File
+			br = new BufferedReader(new FileReader(file));
+
+			String line = null;
+
+			// read file line by line
+			while ((line = br.readLine()) != null) {
+
+				// split the line by :
+				String[] parts = line.split("=");
+
+				// first part is name, second is number
+				String name = parts[0].trim();
+				String number = parts[1].trim();
+
+				// put name, number in HashMap if they are
+				// not empty
+				if (!name.equals("") && !number.equals(""))
+					map.put(name, number);
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		} finally {
+
+			// Always close the BufferedReader
+			if (br != null) {
+				try {
+					br.close();
+				} catch (Exception e) {
+				}
+				;
+			}
+		}
+
+		return map;
 	}
 
 	public static void replaceValue() {
@@ -48,14 +104,14 @@ public class ModifyXmlDomParser {
 		try (InputStream is = new FileInputStream(FILENAME)) {
 
 			DocumentBuilder db = dbf.newDocumentBuilder();
-			
+
 			ArrayList<String> mapping = new ArrayList<String>();
 			mapping.add("p-inputMask");
 			// mapping.put("value", "[(ngModel)]");
 			mapping.add("input");
 			mapping.add("p-multiSelect");
 			mapping.add("p-radioButton");
-			mapping.add("label");
+			// mapping.add("label");
 			Document doc = db.parse(is);
 			for (String str : mapping) {
 				// NodeList listOfStaff = doc.getElementsByTagName("p-inputMask");
@@ -66,7 +122,6 @@ public class ModifyXmlDomParser {
 						if (staff.getNodeType() == Node.ELEMENT_NODE) {
 							String id = staff.getAttributes().getNamedItem("value").getTextContent();
 							System.out.println(id + "id");
-							list.add(id);
 							if (id.indexOf(".") > 0) {
 								String y = id.substring(id.indexOf(".") + 1, id.indexOf("}"));
 								System.out.println(y + "Y");
@@ -143,24 +198,25 @@ public class ModifyXmlDomParser {
 		}
 	}
 
-	public static void mappingFile() throws IOException {
+	public static void mappingFile(Map<String, String> mapFromFile) throws IOException {
 		BufferedReader br = new BufferedReader(new FileReader(
 				"C:\\Users\\Sasmita Laptop\\eclipse-workspac4\\XhtmlProject\\src\\resources\\index.xhtml"));
 		try {
 			StringBuilder sb = new StringBuilder();
 			String line = br.readLine();
 
-			LinkedHashMap<String, String> mapping = new LinkedHashMap<String, String>();
-			mapping.put("p:fieldset", "p-fieldset");
-			mapping.put("p:inputMask", "p-inputMask");
-			// mapping.put("value", "[(ngModel)]");
-			mapping.put("p:inputText", "input type=\"text\"");
-			mapping.put("p:selectOneMenu", "p-multiSelect");
-			mapping.put("p:selectOneRadio", "p-radioButton");
-			mapping.put("p:commandButton", "p-button");
-			mapping.put("p:panelGrid", "p-panel");
-			mapping.put("h:outputText", "label");
-			mapping.put("p:dialog", "<p-button label=\"Show\"><p-dialog");
+			Map<String, String> mapping = new LinkedHashMap<String, String>();
+			mapping = mapFromFile;
+			/*
+			 * mapping.put("p:fieldset", "p-fieldset"); mapping.put("p:inputMask",
+			 * "p-inputMask"); // mapping.put("value", "[(ngModel)]");
+			 * mapping.put("p:inputText", "input type=\"text\"");
+			 * mapping.put("p:selectOneMenu", "p-multiSelect");
+			 * mapping.put("p:selectOneRadio", "p-radioButton");
+			 * mapping.put("p:commandButton", "p-button"); mapping.put("p:panelGrid",
+			 * "p-panel"); mapping.put("h:outputText", "label"); mapping.put("p:dialog",
+			 * "<p-button label=\"Show\"><p-dialog");
+			 */
 
 			while (line != null) {
 
@@ -206,6 +262,9 @@ public class ModifyXmlDomParser {
 						line = line.replace("value", "label");
 					} else if (line.contains("label")) {
 						line = line.replace("value", "for");
+					}else if(line.contains("p-button")) {
+						line = line.replace("<p-button", "<p-button (onClick)=\"showDialog()\" label=\"Show\" />\r\n"
+								+ "<p-dialog");
 					}
 
 				}
@@ -239,23 +298,30 @@ public class ModifyXmlDomParser {
 					String s = line.substring(line.indexOf("action"), line.indexOf("}") + 2);
 					System.out.println(s + "s");
 					line = line.replace(s, "");
-				} else if (line.contains("label")) {
+				} else if (line.contains("label") && line.contains("for")) {
 					String s = line.substring(line.indexOf("/>"));
 					line = line.replace(s, ">$</label>");
 				}
-				
-				if(line.contains("$")) {
-					String forVal = line.substring((line.indexOf("\"")+1),line.indexOf("\"",(line.indexOf("\""))+1));
+				if (line.contains("input")) {
+					if (line.indexOf("<input") > 0) {
+						String s = line.substring(line.indexOf("<"),line.indexOf("input"));
+						line = line.replace(s, "input type=\"text\"");
+					}
+				}
+
+				if (line.contains("$")) {
+					String forVal = line.substring((line.indexOf("\"") + 1),
+							line.indexOf("\"", (line.indexOf("\"")) + 1));
 					line = line.replace("$", forVal);
 				}
-				
+
 				sb.append(line);
 				sb.append(System.lineSeparator());
 				line = br.readLine();
 			}
 			String everything = sb.toString();
 			System.out.println(everything + "everything");
-			
+
 			try (Writer writer = new BufferedWriter(
 					new OutputStreamWriter(new FileOutputStream("filename.txt"), "utf-8"))) {
 				writer.write(everything);
